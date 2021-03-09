@@ -28,6 +28,7 @@
   "config": {
     "deps_check_dir": ".deps_check"
   },
+  "types": "types/index.d.ts",
   "scripts": {
     "automated-release": "release-it --config ./release/.release-it.json",
     "build": "run-s build:umd:browser build:commonjs build:es",
