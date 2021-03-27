@@ -52,8 +52,21 @@ interface Securities {
 }
 
 /**
- * Parameters used to configure an operation on a swagger specification.
+ * http interfaces
  */
+
+export async function http(
+  url: string | ClientRequest,
+  request?: ClientRequest
+): Promise<ClientResponse>;
+
+/**
+ * Execute interfaces
+ * TODO: Figure out baseUrl interface, is it just ExecuteOptions?
+ */
+
+export function execute<T>(opts: ExecuteOptions<T>);
+
 interface ExecuteOptions<T> {
   /**
    * OpenAPI definition represented as POJO.
@@ -114,13 +127,78 @@ interface ExecuteOptions<T> {
    * and must return a Response object. More info in HTTP Client documentation.
    */
   userFetch?: (url: string, request: Request) => Response;
+
+  // TODO: How is this used?
+  extras: {
+    [x: string]: any;
+  };
+}
+
+interface ResolveOptions {
+  fetch?: Http;
+  http?: Http;
+  mode?: string[];
+  allowMetaPatches?: boolean;
+  pathDiscriminator?: string[];
+  modelPropertyMacro?: (obj: any) => void;
+  parameterMacro?: (obj: any) => void;
+  requestInterceptor?: (request: Request) => Request;
+  responseInterceptor?: (response: Response) => Response;
+  skipNormalization?: boolean;
+  useCircularStructures?: boolean;
+  baseDoc?: string;
+}
+
+interface ResolveSubtreeOptions {
+  returnEntireTree?: boolean;
+  modelPropertyMacro?: (obj: any) => void;
+  parameterMacro?: (obj: any) => void;
+  requestInterceptor?: (request: Request) => Request;
+  responseInterceptor?: (response: Response) => Response;
+  useCircularStructures?: boolean;
+  baseDoc?: string;
 }
 
 /**
  * options used for construction of a swagger client object.
  */
 interface ClientOptions {
-  // TODO
+  /**
+   * A URL containing the swagger spec.
+   */
+  url: string;
+
+  /**
+   * Disables the Tags Interface and transformation of all operationIds into callables.
+   */
+  disableInterfaces?: boolean;
+
+  /**
+   *  When set to true, SwaggerClient will use old algorithm for generating unique operationId names
+   *  (present in version 2.x). Instead of camel case (getOne) the algorithm use kebab case (get_one).
+   */
+  v2OperationIdCompatibilityMode?: boolean;
+
+  /**
+   * Maps security schemes to a request. Securities not defined in spec will be ignored.
+   */
+  authorizations: {
+    [x: string]: Securities;
+  };
+
+  /**
+   * Either synchronous or asynchronous function transformer that accepts Request and should return Request.
+   */
+  requestInterceptor?: (request: Request) => Request;
+  /**
+   * Either synchronous or asynchronous function transformer that accepts Response and should return Response.
+   */
+  responseInterceptor?: (response: Response) => Response;
+  /**
+   * Custom asynchronous fetch function that accepts two arguments:
+   * the url and the Request object and must return a Response object.
+   */
+  userFetch?: any;
 }
 
 declare interface SwaggerClient {
@@ -128,17 +206,39 @@ declare interface SwaggerClient {
    * TryItOut Executor is an OpenAPI specific HTTP client for OAS operations.
    * It maps an OAS operation and values into an HTTP request.
    */
-  execute: <T>(operationId: string | ExecuteOptions<T>, opts?: ExecuteOptions<T>) => void;
+  execute: <T>(
+    operationId: string | ExecuteOptions<T>,
+    opts?: ExecuteOptions<T>
+  ) => Promise<ClientResponse>;
   /**
    * The HTTP Client exposes a Fetch-like interface.
    * It extends Fetch API to support request and response interceptors and performs response & header serialization.
    */
   http: (url: string | ClientRequest, request?: ClientRequest) => Promise<ClientResponse>;
+
+  /**
+   * TODO: How to type this, it's based on spec. Must template somehow.
+   */
+  apis: any;
 }
 
 interface SwaggerClientConstructor {
   new (url: string | ClientOptions, opts?: ClientOptions): SwaggerClient;
   (url: string | ClientOptions, opts?: ClientOptions): SwaggerClient;
+
+  /**
+   * TODO: Do I specify the static functions here?
+   */
+
+  http: (url: string | ClientRequest, request?: ClientRequest) => Promise<ClientResponse>;
+
+  execute: <T>(opts?: ExecuteOptions<T>) => Promise<ClientResponse>;
+
+  resolve: (opts?: ResolveOptions) => Promise<any>; // TODO: Type response
+  resolveSubtree: (obj: any, subTrees: string[], opts?: ResolveSubtreeOptions) => Promise<any>;
+  clearCache: () => void;
+
+  applyDefaults: () => void;
 }
 
 declare const Client: SwaggerClientConstructor;
